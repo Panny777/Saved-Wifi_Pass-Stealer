@@ -1,14 +1,13 @@
 import subprocess
 import csv
 
-data = subprocess.check_output(['netsh', 'wlan', 'show', 'profile']).decode('utf-8').split('\n')
-#print(data)
-wifis = [line.split(':')[1][1:-1] for line in data if "All User Profile" in line]
+data = subprocess.check_output(['netsh', 'wlan', 'show', 'profiles']).decode('utf-8', errors="backslashreplace").split('\n')
+profiles = [i.split(":")[1][1:-1] for i in data if "All User Profile" in i]
 
-for wifi in wifis:
-    results = subprocess.check_output(['netsh', 'wlan', 'show', 'profile', wifi, 'key=clear']).decode('utf-8').split('\n')
-    results = [line.split(':')[1][1:-1] for line in results if "Key Content" in line]
+for wifi in profiles:
     try:
+        results = subprocess.check_output(['netsh', 'wlan', 'show', 'profile', wifi, 'key=clear']).decode('utf-8', errors="backslashreplace").split('\n')
+        results = [b.split(":")[1][1:-1] for b in results if "Key Content" in b]
         with open('Wifi.csv', 'r+') as w:
             wifi_list = w.readlines()
             wifiList = []
@@ -16,13 +15,15 @@ for wifi in wifis:
             for line in wifi_list:
                 entry = line.split(',')
                 wifiList.append(entry[0])
-
-            if wifi not in wifi_list:
-                w.write(f'\n{wifi}, {results[0]}')
-
-            else:
-                w.append({wifi}, {results[0]})
-
-        print(f'Name: {wifi}, Password: {results[0]}')
-    except IndexError:
-        print(f'Name: {wifi}, Password: Cannnot be Found')
+            try:
+                w.write(f'\n {wifi}, {results[0]}')
+                print ("{:<30}|  {:<}".format(wifi, results[0]))                
+                    
+            except IndexError:
+                no_pass = ""
+                w.write(f'\n{wifi}, {no_pass}')
+                print ("{:<30}|  {:<}".format(wifi, ""))
+    except subprocess.CalledProcessError:
+            print ("{:<30}|  {:<}".format(i, "ENCODING ERROR"))
+input("")
+exit()
